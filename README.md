@@ -42,6 +42,4 @@ play audio with piano sound pack to preview sheets
 
 ## update plan
 
-1. unfortunately, i forgot that v will use b instead of # while 1 = #C
-
-2. audio preview
+audio preview

@@ -33,25 +33,26 @@ export default class Sheet {
         this.noteList = noteList
     }
 
-    toTxt() {
+    toTxt(isBMode=false) {
         let result = ''
         for (let i in this.noteList) {
-            result += this.noteList[i].toTxt()
+            result += this.noteList[i].toTxt(isBMode)
         }
         return result
     }
 
-    fromTxt(txt, defaultNoteLen = EnumNoteLen["1/4"]) {
+    fromTxt(txt, defaultNoteLen = EnumNoteLen["1/4"], isBMode='false') {
         let stack = []
         let tempNoteList = []
         let scaleGroup = EnumNoteScaleGroup.mid
-        let half = false
+        let half = isBMode
         let i = 0
         while (i < txt.length) {
             let char = txt[i++]
+            console.log(char)
             if (/\d/.test(char)) {
                 tempNoteList.push(new Note(parseInt(char), defaultNoteLen, half, scaleGroup))
-                half = false
+                half = isBMode
             }
             else if (char == ' ') {
                 tempNoteList.push(new Note(EnumNoteScale.do, defaultNoteLen, half, scaleGroup, true))
@@ -59,8 +60,8 @@ export default class Sheet {
             else if (char == '\n') {
                 tempNoteList.push(new Note(EnumNoteScale.do, EnumNoteLen["1/1"], half, scaleGroup, true))
             }
-            else if (char == '#') {
-                half = true
+            else if (char == '#' || char == 'b') {
+                half = !isBMode
             }
             else if (char == '[') {
                 scaleGroup += 1
@@ -83,7 +84,11 @@ export default class Sheet {
             else
                 throw new Error('invalid input: ' + char)
         }
-        this.noteList = tempNoteList
+
+        this.noteList = this.noteList.concat(tempNoteList)
+
+        // this.noteList = tempNoteList
+
         // this.noteList.splice(0, this.noteList.length)
         // this.noteList.concat(tempNoteList)
     }

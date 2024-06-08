@@ -3,7 +3,7 @@
     <div ref="refBox">
         <div class="note-container" tabindex="-1">
             <div class="bg" :class="{ 'active': is_active }" :style="style_bg_width" ref="refBg" />
-            <span class="item-sharp" :style="style_txt" v-html="note.half && !note.empty ? '#' : '\u00a0\u00a0'" />
+            <span class="item-sharp" :style="style_txt" v-html="item_sharp_html" />
             <span class="item-dot-top" :style="style_txt">
                 {{ dotAbove }}
                 <br v-show="!dotAbove" />
@@ -70,7 +70,7 @@ import { computed, ref, watch, nextTick } from 'vue';
 import { ElPopover, ElInputNumber, ElSelect, ElMessage } from 'element-plus';
 
 //prop
-const props = defineProps(['style_txt', 'is_active'])
+const props = defineProps(['style_txt', 'is_active', 'is_b_mode'])
 
 //model
 const note = defineModel()
@@ -107,6 +107,14 @@ const style_bg_width = computed(() => {
 //         return 'width:' + refBg.value.offsetWidth + 'px;'
 //     return ''
 // })
+const item_sharp_html = computed(()=>{
+    if (note.value.empty)
+        return '\u00a0\u00a0'
+    if (props.is_b_mode)
+        return note.value.half ? '\u00a0\u00a0' : 'b'
+    else
+        return note.value.half ? '#' : '\u00a0\u00a0'
+})
 
 //watch
 watch(() => note.value.length, async () => {

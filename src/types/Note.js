@@ -36,7 +36,7 @@ export default class Note {
     }
 
     fromNumber(num) {
-        let temp = num /6
+        let temp = num / 6
         if (temp < 0)
             temp -= 1
         temp = parseInt(temp)
@@ -59,17 +59,19 @@ export default class Note {
         this.fromNumber(num)
     }
 
-    toTxt() {
+    toTxt(isBMode = false) {
         if (this.empty) {
             if (this.length == EnumNoteLen["1/1"])
                 return '<br />'
             else
-                return ' '
+                return '\u00a0\u00a0'
         }
 
         let result = this.scale.toString()
-        if (this.half)
+        if (this.half && !isBMode)
             result = '#' + result
+        else if (!this.half && isBMode)
+            result = 'b' + result
         if (!this.scaleGroup)
             return result
         if (this.scaleGroup > 0) {
@@ -81,47 +83,47 @@ export default class Note {
         return result
     }
 
-    fromTxt(txt) {
-        let stack = []
-        let i = 0
-        let scaleGroup = 0
-        let half = false
-        let flagNumberOnce = false
+    // fromTxt(txt) {
+    //     let stack = []
+    //     let i = 0
+    //     let scaleGroup = 0
+    //     let half = false
+    //     let flagNumberOnce = false
 
-        while (i < txt.length) {
-            char = txt[i++]
-            if (char == '[') {
-                stack.push(char)
-                scaleGroup += 1
-            }
-            else if (char == '(') {
-                stack.push(char)
-                scaleGroup -= 1
-            }
-            else if (char == ']' && stack.pop() != '[')
-                throw Note.errorBracketDismatch
-            else if (char == ')' && stack.pop() != '([)')
-                throw Note.errorBracketDismatch
-            else if (char == '#') {
-                if (half)
-                    throw Note.errorMutiSharp
-                half = true
-            }
-            else if (/\d/.test(char)) {
-                if (flagNumberOnce)
-                    throw Note.errorMutiNumber
-                flagNumberOnce = true
-                var scale = parseInt(char)
-            }
-        }
+    //     while (i < txt.length) {
+    //         char = txt[i++]
+    //         if (char == '[') {
+    //             stack.push(char)
+    //             scaleGroup += 1
+    //         }
+    //         else if (char == '(') {
+    //             stack.push(char)
+    //             scaleGroup -= 1
+    //         }
+    //         else if (char == ']' && stack.pop() != '[')
+    //             throw Note.errorBracketDismatch
+    //         else if (char == ')' && stack.pop() != '([)')
+    //             throw Note.errorBracketDismatch
+    //         else if (char == '#') {
+    //             if (half)
+    //                 throw Note.errorMutiSharp
+    //             half = true
+    //         }
+    //         else if (/\d/.test(char)) {
+    //             if (flagNumberOnce)
+    //                 throw Note.errorMutiNumber
+    //             flagNumberOnce = true
+    //             var scale = parseInt(char)
+    //         }
+    //     }
 
-        if (!scale)
-            throw Note.errorNoNumber
+    //     if (!scale)
+    //         throw Note.errorNoNumber
 
-        this.scale = scale
-        this.scaleGroup = scaleGroup
-        this.half = half
-    }
+    //     this.scale = scale
+    //     this.scaleGroup = scaleGroup
+    //     this.half = half
+    // }
 
     toJson() {
         // return {
