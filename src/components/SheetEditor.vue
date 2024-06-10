@@ -41,7 +41,7 @@
                 <el-button :disabled="disable" @click="on_del_btn_clicked">
                     delete
                 </el-button>
-                <el-button :disabled="disable">
+                <el-button :disabled="true">
                     audio preview
                 </el-button>
             </div>
@@ -192,7 +192,8 @@ const on_b_mode_btn_clicked = () => {
 
 //watch
 watch(() => sheet.value.tone, (newVal, oldVal) => {
-    isBMode.value = (newVal.search('#') >= 0)
+    if(newVal)
+        isBMode.value = (newVal.search('#') >= 0)
 })
 
 </script>

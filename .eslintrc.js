@@ -33,3 +33,5 @@ module.exports = {
         }
     ],
 };
+
+// created by `node_modules\.bin\eslint --init`

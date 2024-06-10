@@ -10,9 +10,9 @@ a light digital musical sheet manager with webui
 
 ## tech stack
 
-vue.js
+[vue.js](https://cn.vuejs.org/guide/introduction.html)
 
-element-plus
+[element-plus](https://element-plus.org/zh-CN/)
 
 ## release
 
