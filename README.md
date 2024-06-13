@@ -16,7 +16,7 @@ a light digital musical sheet manager with webui
 
 ## release
 
-[click here]()
+[click here](https://github.com/exduke/mu-sheet-manager/releases)
 
 ## introdution
 
