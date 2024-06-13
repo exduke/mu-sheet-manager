@@ -33,7 +33,7 @@ export default class Sheet {
         this.noteList = noteList
     }
 
-    toTxt(isBMode=false) {
+    toTxt(isBMode = false) {
         let result = ''
         for (let i in this.noteList) {
             result += this.noteList[i].toTxt(isBMode)
@@ -41,7 +41,7 @@ export default class Sheet {
         return result
     }
 
-    fromTxt(txt, defaultNoteLen = EnumNoteLen["1/4"], isBMode='false') {
+    fromTxt(txt, defaultNoteLen = EnumNoteLen["1/4"], isBMode = 'false') {
         let stack = []
         let tempNoteList = []
         let scaleGroup = EnumNoteScaleGroup.mid
@@ -81,8 +81,10 @@ export default class Sheet {
                     throw Sheet.errorBracketDismatch
                 scaleGroup += 1
             }
+            else if (char == '\u00a0')
+                continue
             else
-                throw new Error('invalid input: ' + char)
+                throw new Error('invalid input: ' + char + ' \\u' + char.charCodeAt(0).toString(16))
         }
 
         this.noteList = this.noteList.concat(tempNoteList)
@@ -93,8 +95,8 @@ export default class Sheet {
         // this.noteList.concat(tempNoteList)
     }
 
-    raise_key(offset){
-        for(let i in this.noteList){
+    raise_key(offset) {
+        for (let i in this.noteList) {
             if (!this.noteList[i].empty)
                 this.noteList[i].raise_key(offset)
         }
