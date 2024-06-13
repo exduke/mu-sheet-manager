@@ -54,7 +54,7 @@ export default class Sheet {
                 tempNoteList.push(new Note(parseInt(char), defaultNoteLen, half, scaleGroup))
                 half = isBMode
             }
-            else if (char == ' ') {
+            else if (char == ' ' || char == '\u00a0') {
                 tempNoteList.push(new Note(EnumNoteScale.do, defaultNoteLen, half, scaleGroup, true))
             }
             else if (char == '\n') {
@@ -81,8 +81,6 @@ export default class Sheet {
                     throw Sheet.errorBracketDismatch
                 scaleGroup += 1
             }
-            else if (char == '\u00a0')
-                continue
             else
                 throw new Error('invalid input: ' + char + ' \\u' + char.charCodeAt(0).toString(16))
         }
