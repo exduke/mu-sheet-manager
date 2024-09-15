@@ -42,4 +42,6 @@ play audio with piano sound pack to preview sheets
 
 ## update plan
 
-audio preview
+1. play sheet (cursor auto move accroding to time)
+
+2. audio preview
