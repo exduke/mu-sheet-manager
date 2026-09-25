@@ -45,13 +45,15 @@
                     audio preview
                 </el-button>
             </div>
-            <div class="note-list-editor-body">
-                <!-- use index i as v-bind:key will definitely cause performance problems since virtual dom wont work normally -->
-                <NoteEditor v-for="i in sheet.noteList.length" :key="i" v-model="sheet.noteList[i - 1]"
-                    :style_txt="style_txt" @click="indexNoteSelect = i - 1" :is_active="indexNoteSelect == i - 1"
-                    :is_b_mode="isBMode" />
+            <div class="note-list-editor-body" ref="refNoteListBody">
+                <NoteItem v-for="(note, i) in sheet.noteList" :key="i" :note="note" :style_txt="style_txt"
+                    :is_active="indexNoteSelect == i" :is_b_mode="isBMode" @click="on_note_item_clicked(i, $event)" />
             </div>
         </div>
+
+        <!-- the one and only NoteEditor: it follows the clicked note, resets and rebinds on every move -->
+        <NoteEditor v-if="isEditorVisible && activeNote && anchorEl" :key="indexNoteSelect" v-model="activeNote"
+            :anchor-el="anchorEl" :visible="isEditorVisible" @close="close_note_editor" />
 
         <div class="note-list-txt-displayer" v-if="displayMode == 'text'" :style="style_txt"
             v-html="sheet.toTxt(isBMode)" />
@@ -100,9 +102,10 @@ import { EnumNoteLen, EnumNoteScale, EnumNoteScaleGroup } from '@/enums/Note';
 </script>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import NoteEditor from '@/components/NoteEditor.vue'
-import { ElDialog, ElInput, ElMessage, ElInputNumber, textProps } from 'element-plus';
+import NoteItem from '@/components/NoteItem.vue'
+import { ElDialog, ElInput, ElMessage, ElInputNumber } from 'element-plus';
 
 //model
 const sheet = defineModel()
@@ -113,6 +116,9 @@ const props = defineProps(['disable'])
 //data
 const fontSize = ref('1.5')
 const indexNoteSelect = ref(0)
+const isEditorVisible = ref(false)
+const anchorEl = ref(null)
+const refNoteListBody = ref(null)
 const isfromTxtDialogShow = ref(false)
 const isloading = ref(false)
 const txt = ref('')
@@ -126,13 +132,62 @@ const isBMode = ref(false)
 const style_txt = computed(() => {
     return 'font-size: ' + fontSize.value + 'rem;'
 })
+// the note the single NoteEditor is bound to
+const activeNote = computed({
+    get() {
+        return sheet.value.noteList[indexNoteSelect.value]
+    },
+    set(val) {
+        sheet.value.noteList[indexNoteSelect.value] = val
+    }
+})
 
 //method
+const close_note_editor = () => {
+    isEditorVisible.value = false
+    anchorEl.value = null
+}
+// the note items are patched in place, so the anchor of the editor is always looked up again
+// by index instead of being kept as a stored element
+const refresh_note_editor_anchor = async () => {
+    await nextTick()
+    if (!isEditorVisible.value)
+        return
+    anchorEl.value = refNoteListBody.value ? (refNoteListBody.value.children[indexNoteSelect.value] ?? null) : null
+    if (!anchorEl.value)
+        isEditorVisible.value = false
+}
+// move the single NoteEditor to the clicked note: it gets a new anchor and, through
+// :key="indexNoteSelect", a brand new instance bound to the newly selected note
+const on_note_item_clicked = (index, e) => {
+    const el = (e && e.currentTarget) || (refNoteListBody.value ? (refNoteListBody.value.children[index] ?? null) : null)
+    if (index == indexNoteSelect.value) {
+        // clicking the selected note again toggles the editor, just like the old popovers did
+        if (isEditorVisible.value)
+            close_note_editor()
+        else if (el) {
+            anchorEl.value = el
+            isEditorVisible.value = true
+        }
+        return
+    }
+    indexNoteSelect.value = index
+    anchorEl.value = el
+    isEditorVisible.value = true
+}
 const on_add_btn_clicked = () => {
     sheet.value.noteList.splice(indexNoteSelect.value + 1, 0, new Note(EnumNoteScale.do, EnumNoteLen['1/4'], false, EnumNoteScaleGroup.mid, true))
 }
 const on_del_btn_clicked = () => {
     sheet.value.noteList.splice(indexNoteSelect.value, 1)
+    if (sheet.value.noteList.length == 0) {
+        indexNoteSelect.value = 0
+        close_note_editor()
+        return
+    }
+    if (indexNoteSelect.value > sheet.value.noteList.length - 1)
+        indexNoteSelect.value = sheet.value.noteList.length - 1
+    refresh_note_editor_anchor()
 }
 const on_fromtext_btn_clicked = () => {
     isfromTxtDialogShow.value = true
@@ -194,6 +249,16 @@ const on_b_mode_btn_clicked = () => {
 watch(() => sheet.value.tone, (newVal, oldVal) => {
     if(newVal)
         isBMode.value = (newVal.search('#') >= 0)
+})
+// another sheet has another note list: drop the selection and the anchor of the editor
+watch(() => sheet.value, () => {
+    indexNoteSelect.value = 0
+    close_note_editor()
+})
+// a note can hardly be edited while the sheet is displayed as text
+watch(displayMode, (newVal) => {
+    if (newVal != 'notes')
+        close_note_editor()
 })
 
 </script>

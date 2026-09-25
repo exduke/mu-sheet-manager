@@ -1,134 +1,75 @@
 <template>
-    <!-- <div ref="refBox" :style="style_box_width"> -->
-    <div ref="refBox">
-        <div class="note-container" tabindex="-1">
-            <div class="bg" :class="{ 'active': is_active }" :style="style_bg_width" ref="refBg" />
-            <span class="item-sharp" :style="style_txt" v-html="item_sharp_html" />
-            <span class="item-dot-top" :style="style_txt">
-                {{ dotAbove }}
-                <br v-show="!dotAbove" />
+    <!-- this is the single NoteEditor instance of the app.
+         the popover is controlled: only the "visible" prop decides whether it shows, so the
+         built in trigger toggle and the built in click-outside close of element-plus are off.
+         it is anchored to the note that is currently selected and follows the user's click. -->
+    <el-popover :virtual-ref="anchorEl" virtual-triggering trigger="click" :visible="visible"
+        width="fit-content">
+        <el-row>
+            <span>
+                scale:
             </span>
-            <span class="item-number" :style="style_txt"
-                v-html="'\u00a0' + (note.empty ? '\u00a0\u00a0' : note.scale) + '\u00a0'" />
-            <span class="item-dot-bottom" :style="style_txt">
-                {{ dotBelow }}
-                <br v-show="!dotBelow" />
+            <el-input-number v-model="note.scale" step-strictly :step="1" @change="onInputScaleChanged" />
+        </el-row>
+        <el-row>
+            <span>
+                pitch:
             </span>
-
-            <el-popover virtual-triggering :virtual-ref="refBox" trigger="click" width="fit-content">
-                <el-row>
-                    <span>
-                        scale:
-                    </span>
-                    <el-input-number v-model="note.scale" step-strictly :step="1" @change="onInputScaleChanged" />
-                </el-row>
-                <el-row>
-                    <span>
-                        pitch:
-                    </span>
-                    <el-input-number v-model="note.scaleGroup" step-strictly :step="1"
-                        @change="onInputScaleGroupChanged" />
-                </el-row>
-                <el-row>
-                    <span>
-                        length:
-                    </span>
-                    <el-select v-model="note.length">
-                        <el-option v-for="key in Object.keys(EnumNoteLen)" :key="key" :label="key"
-                            :value="EnumNoteLen[key]" />
-                    </el-select>
-                </el-row>
-                <el-row>
-                    <span>
-                        half rise:
-                    </span>
-                    <el-select v-model="note.half">
-                        <el-option label="true" :value="true" />
-                        <el-option label="false" :value="false" />
-                    </el-select>
-                </el-row>
-                <el-row>
-                    <span>
-                        empty:
-                    </span>
-                    <el-select v-model="note.empty">
-                        <el-option label="true" :value="true" />
-                        <el-option label="false" :value="false" />
-                    </el-select>
-                </el-row>
-            </el-popover>
-        </div>
-    </div>
+            <el-input-number v-model="note.scaleGroup" step-strictly :step="1"
+                @change="onInputScaleGroupChanged" />
+        </el-row>
+        <el-row>
+            <span>
+                length:
+            </span>
+            <el-select v-model="note.length">
+                <el-option v-for="key in Object.keys(EnumNoteLen)" :key="key" :label="key"
+                    :value="EnumNoteLen[key]" />
+            </el-select>
+        </el-row>
+        <el-row>
+            <span>
+                half rise:
+            </span>
+            <el-select v-model="note.half">
+                <el-option label="true" :value="true" />
+                <el-option label="false" :value="false" />
+            </el-select>
+        </el-row>
+        <el-row>
+            <span>
+                empty:
+            </span>
+            <el-select v-model="note.empty">
+                <el-option label="true" :value="true" />
+                <el-option label="false" :value="false" />
+            </el-select>
+        </el-row>
+    </el-popover>
 </template>
 
-<script>
-import { EnumNoteScale, EnumNoteScaleGroup, EnumNoteLen } from '@/enums/Note';
-</script>
-
 <script setup>
-import { computed, ref, watch, nextTick } from 'vue';
+import { onBeforeUnmount, onMounted } from 'vue';
 import { ElPopover, ElInputNumber, ElSelect, ElMessage } from 'element-plus';
+import { EnumNoteScale, EnumNoteScaleGroup, EnumNoteLen } from '@/enums/Note';
+
+// nothing may fall through to el-popover: an onUpdate:visible attr would switch element-plus
+// out of the controlled mode and break the "move to the clicked note" behaviour
+defineOptions({ inheritAttrs: false })
 
 //prop
-const props = defineProps(['style_txt', 'is_active', 'is_b_mode'])
+const props = defineProps({
+    // the dom element the popover is anchored to (the selected note item)
+    anchorEl: { type: Object, default: null },
+    // controlled visibility
+    visible: { type: Boolean, default: false },
+})
 
 //model
 const note = defineModel()
 
-//data
-const refBg = ref()
-const refBox = ref()
-
-//computed
-const dotAbove = computed(() => {
-    if (note.value.empty)
-        return ''
-    if (note.value.scaleGroup == EnumNoteScaleGroup.high)
-        return '•'
-    if (note.value.scaleGroup == EnumNoteScaleGroup.highhigh)
-        return '••'
-    return ''
-})
-const dotBelow = computed(() => {
-    if (note.value.empty)
-        return ''
-    if (note.value.scaleGroup == EnumNoteScaleGroup.low)
-        return '•'
-    if (note.value.scaleGroup == EnumNoteScaleGroup.lowlow)
-        return '••'
-    return ''
-})
-const style_bg_width = computed(() => {
-    return 'width:' + note.value.length * 800 + '%;'
-})
-// vue cant watch dom
-// const style_box_width = computed(() => {
-//     if (refBg.value)
-//         return 'width:' + refBg.value.offsetWidth + 'px;'
-//     return ''
-// })
-const item_sharp_html = computed(()=>{
-    if (note.value.empty)
-        return '\u00a0\u00a0'
-    if (props.is_b_mode)
-        return note.value.half ? '\u00a0\u00a0' : 'b'
-    else
-        return note.value.half ? '#' : '\u00a0\u00a0'
-})
-
-//watch
-watch(() => note.value.length, async () => {
-    await nextTick()
-    refBox.value.style.width = refBg.value.offsetWidth + 'px'
-}, { immediate: true })
-watch(() => props.style_txt, async () => {
-    await nextTick()
-    refBox.value.style.width = refBg.value.offsetWidth + 'px'
-}, { immediate: true })
-// will be triggered when change sheet
-// watch(() => note.value.scale, () => {
-//     note.value.empty = false
-// })
+//emit
+const emit = defineEmits(['close'])
 
 //method
 const onInputScaleGroupChanged = (newVal, oldVal) => {
@@ -156,57 +97,24 @@ const onInputScaleChanged = (newVal, oldVal) => {
     }
 }
 
+// close when the user clicks outside of the popover.
+// clicks inside a popper (this popover, or the dropdown of the selects inside of it) and
+// clicks on a note item (the note list decides whether to move or to toggle) are ignored
+const on_document_pointerdown = (e) => {
+    const target = e.target
+    if (!(target instanceof Element))
+        return
+    if (target.closest('.el-popper') || target.closest('.note-item'))
+        return
+    emit('close')
+}
+
+//lifecycle
+onMounted(() => document.addEventListener('pointerdown', on_document_pointerdown))
+onBeforeUnmount(() => document.removeEventListener('pointerdown', on_document_pointerdown))
 </script>
 
 <style>
-.note-container {
-    display: grid;
-    grid-template-rows: auto auto auto;
-    grid-template-columns: auto auto auto;
-    width: fit-content;
-    text-align: center;
-}
-
-.note-container .item-sharp {
-    grid-row: 2;
-    grid-column: 1;
-}
-
-.note-container .item-number {
-    grid-row: 2;
-    grid-column: 2;
-}
-
-.note-container .item-dot-top {
-    grid-row: 1;
-    grid-column: 2;
-}
-
-.note-container .item-dot-bottom {
-    grid-row: 3;
-    grid-column: 2;
-}
-
-.note-container .bg {
-    grid-column: 1 / 4;
-    grid-row: 1 / 4;
-    background-color: rgba(80, 80, 80, 0.3);
-    border-radius: 10px;
-    height: 50%;
-    align-self: center;
-}
-
-/* .note-container:focus .bg {
-    background-color: #409eff;
-} */
-.note-container .bg.active {
-    background-color: #409eff;
-}
-
-.note-container:hover .bg {
-    background-color: #a0cfff;
-}
-
 /* unsafe to use .el-popover as root in selector!!!!! */
 .el-popover .el-row {
     align-items: center;
